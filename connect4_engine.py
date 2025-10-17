@@ -20,6 +20,7 @@ def drop_piece(col):
                 reset_board()
             player = 2 if player == 1 else 1
             return
+    print("Invalid move! You went above the board, try again")
 
 def check_win(p):
     for r in range(ROWS):
@@ -52,6 +53,6 @@ if __name__ == "__main__":
             move = int(input())
             drop_piece(move)
         except:
-            print("bad move, try again")
+            print("Invalid move! Type a valid column, try again")
             continue
 
