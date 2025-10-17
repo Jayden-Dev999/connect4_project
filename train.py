@@ -2,6 +2,6 @@
 # For example:
 print("Training started...")
 
-# (paste your real Python training code here)
+# (paste real Python training code here)
 
 print("Training complete!")
