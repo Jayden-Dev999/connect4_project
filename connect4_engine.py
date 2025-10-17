@@ -48,5 +48,10 @@ if __name__ == "__main__":
     while True:
         print_board()
         print(f"Player {player}'s move:")
-        move = int(input())
-        drop_piece(move)
+        try:
+            move = int(input())
+            drop_piece(move)
+        except:
+            print("bad move, try again")
+            continue
+
