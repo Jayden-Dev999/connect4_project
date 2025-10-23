@@ -16,6 +16,7 @@ def drop_piece(col):
             board[row][col] = player  
             if check_win(player):
                 print(f"Player {player} wins")
+                print_board()
                 reset_board()
                 return
             check_draw()
