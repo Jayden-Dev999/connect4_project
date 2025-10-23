@@ -1,3 +1,5 @@
+import sys
+
 ROWS, COLS = 6, 7
 player = 1
 board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
@@ -51,8 +53,6 @@ def reset_board():
     global board, player
     board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
     player = 1
-
-import sys
 
 if __name__ == "__main__":
     reset_board()
