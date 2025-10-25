@@ -95,22 +95,22 @@ class Connect4Model(nn.Module):
 # Also need a way to say it was a draw
 def play_one_game(model1, model2):
     players = [model1, model2]
-    random.shuffle(players)
-
     reset_board()
-    player_index = 0
+    player_index = random.randint(0,1)
     while True:
         move = players[player_index].play_move(board, player_index + 1)
         result = drop_piece(move)
         if result == DRAW:
-            # penalize anyone?
+            return
             break
         elif result == WIN:
             # reward this model, penalize other one?
+            return player_index
             break
         elif result == INVALID_MOVE:
             # penalize this model
-            continue
+            return player_index + 2
+            break
         player_index = (player_index + 1) % 2
 
 # Play a series of games between two models, return
@@ -118,13 +118,14 @@ def play_one_game(model1, model2):
 # is enough for us to conclude that one model is stronger
 # than the other.
 def play_series(model1, model2, number_of_games):
-    pass
+    for i in range(1000):
+      play_one_game()
 
 if __name__ == "__main__":
     reset_board()
     while True:
         print_board()
-        print(f"Player {player}'s move:")
+        print(f"Type a column number. Player {player}'s move:")
         try:
             move = int(input())
             if move == 0:
