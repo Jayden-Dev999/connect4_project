@@ -2,10 +2,11 @@ import sys
 import torch
 import torch.nn as nn
 import random
+import numpy as np
 
 ROWS, COLS = 6, 7
 player = 1
-board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
+board = np.zeros((ROWS,COLS), dtype=int)
 
 def print_board():
     for r in range(ROWS):
@@ -22,8 +23,8 @@ INVALID_MOVE = 3
 def drop_piece(col):
     global player
     for row in reversed(range(ROWS)):
-        if board[row][col] == 0:
-            board[row][col] = player  
+        if board[row,col] == 0:
+            board[row,col] = player  
             if check_win(player):
                 print(f"Player {player} wins")
                 print_board()
@@ -42,25 +43,25 @@ def drop_piece(col):
 def check_win(p):
     for r in range(ROWS):
         for c in range(COLS - 3):
-            if all(board[r][c+i] == p for i in range(4)): return True
+            if all(board[r,c+i] == p for i in range(4)): return True
     for r in range(ROWS - 3):
         for c in range(COLS):
-            if all(board[r+i][c] == p for i in range(4)): return True
+            if all(board[r+i,c] == p for i in range(4)): return True
     for r in range(ROWS - 3):
         for c in range(COLS - 3):
-            if all(board[r+i][c+i] == p for i in range(4)): return True
-            if all(board[r+3-i][c+i] == p for i in range(4)): return True
+            if all(board[r+i,c+i] == p for i in range(4)): return True
+            if all(board[r+3-i,c+i] == p for i in range(4)): return True
     return False
 
 def check_draw():
     for c in range(COLS):
-        if board[0][c] == 0:
+        if board[0,c] == 0:
             return False
     return True
 
 def reset_board():
     global board, player
-    board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
+    board = np.zeros((ROWS, COLS), dtype=int)
     player = 1
 
 # represents the data of an AI model
