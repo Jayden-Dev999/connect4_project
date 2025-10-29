@@ -88,21 +88,18 @@ class Connect4Model(nn.Module):
     def load(self, filename):
         pass
 
-    def play_move(self, board, player):
-        board_tensor = torch.tensor(board, dtype=torch.float32).flatten()
-        with torch.no_grad():
-            outputs = self.forward(board_tensor)
-        move_scores = outputs.tolist()
-        moves = sorted(range(len(move_scores)), key=lambda i: move_scores[i], reverse=True)  
-        for move in moves:
-            if board[0][move] == 0:
-                return move
-            valid_moves = [c for c in range(len(board[0])) if board[0][c] == 0]
-            return random.choice(valid_moves) if valid_moves else None
     # ask the model which move it should play, given the board
     # position and this model's player.  Returns a column to play in.
     def play_move(self, board, player):
-        pass
+        # construct a mask of valid values - an entry in the list is
+        # True if it's legal to move there
+        mask = torch.tensor([board[0, i] == 0 for i in range(COLS)])
+
+        board_tensor = torch.tensor(board, dtype=torch.float32).flatten()
+        with torch.no_grad():
+            outputs = self.forward(board_tensor)
+            # apply the mask to the outputs and return the highest-rated move
+            return torch.argmax(outputs * mask).item()
     
     # update the model somehow to try to make it stronger
     # maybe this is random updates?
