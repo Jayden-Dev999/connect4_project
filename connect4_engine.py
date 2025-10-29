@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import random
 import numpy as np
+import math
 
 ROWS, COLS = 6, 7
 player = 1
@@ -93,13 +94,13 @@ class Connect4Model(nn.Module):
     def play_move(self, board, player):
         # construct a mask of valid values - an entry in the list is
         # True if it's legal to move there
-        mask = torch.tensor([board[0, i] == 0 for i in range(COLS)])
+        mask = torch.tensor([0.0 if board[0, i] == 0 else math.inf for i in range(COLS)])
 
         board_tensor = torch.tensor(board, dtype=torch.float32).flatten()
         with torch.no_grad():
             outputs = self.forward(board_tensor)
             # apply the mask to the outputs and return the highest-rated move
-            return torch.argmax(outputs * mask).item()
+            return torch.argmax(outputs - mask).item()
     
     # update the model somehow to try to make it stronger
     # maybe this is random updates?
@@ -132,6 +133,7 @@ def play_one_game(model1, model2):
                 continue
         else:
             move = m.play_move(board, player_index + 1)
+            print(f'AI player {player} moved in column {move + 1}')
         result = drop_piece(move)
         if result == DRAW:
             return
@@ -155,6 +157,6 @@ def play_series(model1, model2, number_of_games):
       play_one_game(model1, model2)
 
 if __name__ == "__main__":
-#    model = Connect4Model(ROWS * COLS, COLS)
+    model = Connect4Model(ROWS * COLS, COLS)
 #    play_one_game(None, model)
-    play_one_game(None, None)
+    play_one_game(None, model)
