@@ -107,6 +107,7 @@ class Connect4Model(nn.Module):
         pass
 
 # have two models play a game until one wins.
+# if a model is None then a human needs to play.
 # needs to return which model wins the game.
 # Also need a way to say it was a draw
 def play_one_game(model1, model2):
@@ -114,7 +115,23 @@ def play_one_game(model1, model2):
     reset_board()
     player_index = random.randint(0,1)
     while True:
-        move = players[player_index].play_move(board, player_index + 1)
+        m = players[player_index]
+        if m is None:
+            print_board()
+            print(f"Type a column number. Player {player}'s move:")
+
+            try:
+                move = int(input())
+                if move == 0:
+                    print('Quiting...')
+                    sys.exit(0)
+                move = move - 1
+
+            except (ValueError, IndexError):
+                print("Invalid move! Type a valid column, try again")
+                continue
+        else:
+            move = m.play_move(board, player_index + 1)
         result = drop_piece(move)
         if result == DRAW:
             return
@@ -135,23 +152,9 @@ def play_one_game(model1, model2):
 # than the other.
 def play_series(model1, model2, number_of_games):
     for i in range(1000):
-      play_one_game()
+      play_one_game(model1, model2)
 
 if __name__ == "__main__":
 #    model = Connect4Model(ROWS * COLS, COLS)
-#    move = model.play_move(board, player=1)
-#    print("AI chose column:", move)
-    reset_board()
-    while True:
-        print_board()
-        print(f"Type a column number. Player {player}'s move:")
-        try:
-            move = int(input())
-            if move == 0:
-                print('Quiting...')
-                sys.exit(0)
-            drop_piece(move - 1)
-
-        except (ValueError, IndexError):
-            print("Invalid move! Type a valid column, try again")
-            continue
+#    play_one_game(None, model)
+    play_one_game(None, None)
