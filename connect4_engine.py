@@ -73,7 +73,13 @@ class Connect4Model(nn.Module):
         self.fc1 = nn.Linear(input_dim, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, output_dim)
-      
+
+    # this function tells pytorch how to apply the layers of the neural net
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        return self.fc3(x)
+
     # save the model to a file
     def save(self, filename):
         pass
