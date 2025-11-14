@@ -157,9 +157,19 @@ def play_one_game(model1, model2):
 # is enough for us to conclude that one model is stronger
 # than the other.
 def play_series(model1, model2, number_of_games):
-    for i in range(1000):
-      play_one_game(model1, model2)
-
+    model1_wins = 0
+    model2_wins = 0
+    for i in range(number_of_games):
+        result = play_one_game(model1, model2)
+        if result == 0:
+            model1_wins += 1
+        elif result == 1:
+            model2_wins += 1
+    if model1_wins > model2_wins + 30:
+        return model1
+    elif model2_wins > model1_wins + 30:
+        return model2
+            
 if __name__ == "__main__":
     model = Connect4Model(ROWS * COLS, COLS)
     play_one_game(None, model)
