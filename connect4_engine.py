@@ -66,6 +66,15 @@ def reset_board():
     board = np.zeros((ROWS, COLS), dtype=int)
     player = 1
 
+# invert the board, so that 1's become 2's and vice-versa
+def invert_board(board):
+    for r in range(ROWS):
+        for c in range(COLS):
+            if board[r][c] == 1:
+                board[r][c] = 2
+            elif board[r][c] == 2:
+                board[r][c] = 1
+
 # represents the data of an AI model
 class Connect4Model(nn.Module):
   
@@ -96,16 +105,19 @@ class Connect4Model(nn.Module):
         # construct a mask of valid values - an entry in the list is
         # True if it's legal to move there
         mask = torch.tensor([0.0 if board[0, i] == 0 else math.inf for i in range(COLS)])
-
+        if player == 2:
+            invert_board(board)
         board_tensor = torch.tensor(board, dtype=torch.float32).flatten()
         with torch.no_grad():
             outputs = self.forward(board_tensor)
+            if player == 2:
+                invert_board(board)
             # apply the mask to the outputs and return the highest-rated move
             return torch.argmax(outputs - mask).item()
     
     # update the model somehow to try to make it stronger
     # maybe this is random updates?
-    class evolve(self):
+    def evolve(self):
         pass
 
 # have two models play a game until one wins.
