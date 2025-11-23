@@ -7,6 +7,7 @@ import numpy as np
 import math
 import copy
 import pickle
+from multiprocessing import Pool
 
 ROWS, COLS = 6, 7
 player = 1
@@ -178,7 +179,7 @@ def play_one_game(model1, model2):
 
         player_index = (player_index + 1) % 2
 
-# Play a series of games between two models, and set the win count on each model.
+# Play a series of games between two models, and return the win counts of each
 def play_series(model1, model2, number_of_games):
     model1_wins = 0
     model2_wins = 0
@@ -188,8 +189,17 @@ def play_series(model1, model2, number_of_games):
             model1_wins += 1
         elif result == 1:
             model2_wins += 1
-    model1.win_count += model1_wins
-    model2.win_count += model2_wins
+    return (model1_wins, model2_wins)
+
+# play the ith model against models numbered higher in the given list of models
+def play_i(i, models, number_of_games):
+    all_wins = [0] * len(models)
+    for j in range(i+1, len(models)):
+        wins = play_series(models[i], models[j], 100)
+        print(f"model {i} won {wins[0]}, model {j} won {wins[1]}")
+        all_wins[i] = wins[0]
+        all_wins[j] = wins[1]
+    return all_wins
 
 class GeneticAlgorithm:
     def __init__(self, num_models):
@@ -203,10 +213,22 @@ class GeneticAlgorithm:
         # initialize everyone's count to 0
         for model in self.models:
             model.win_count = 0
-        for i in range(self.num_models):
-            for j in range(i+1, self.num_models):
-                play_series(self.models[i], self.models[j], 100)
-                print(f"model {i} won {self.models[i].win_count}, model {j} won {self.models[j].win_count}")
+
+        def store_result(all_wins):
+            for m, w in zip(self.models, all_wins):
+                m.win_count += w
+
+        # allocate a list to store async results from running models in parallel
+        async_results = [None] * self.num_models
+
+        # assume a 12-thread CPU for now
+        with Pool(12) as p:
+            # async play each model against the rest
+            for i in range(self.num_models):
+                async_results[i] = p.apply_async(play_i, (i, self.models, 100))
+            # apply the collected results to the actual win counts on the models
+            for res in async_results:
+                store_result(res.get())
 
     # mutate survivors until population is full
     def fill_population(self):
@@ -239,9 +261,11 @@ if __name__ == "__main__":
     try:
         with open('genetic_data', 'rb') as f:
             gen = pickle.load(f)
+            gen.num_models = 40
     except:
-        gen = GeneticAlgorithm(20)
-    for i in range(1):
+        gen = GeneticAlgorithm(40)
+
+    for i in range(10000):
         gen.generation_step(i)
         with open('genetic_data', 'wb') as f:
             pickle.dump(gen, f)
