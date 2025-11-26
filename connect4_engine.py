@@ -83,9 +83,10 @@ class Connect4Model(nn.Module):
   
     def __init__(self, input_dim, output_dim):
         super(Connect4Model, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, output_dim)
+        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3)
+        self.bn = nn.BatchNorm2d(1)
+        self.fc1 = nn.Linear(4*5, 128)
+        self.fc2 = nn.Linear(128, output_dim)
         self.win_count = 0
 
     def __lt__(self, other):
@@ -93,9 +94,11 @@ class Connect4Model(nn.Module):
 
     # this function tells pytorch how to apply the layers of the neural net
     def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        return self.fc3(x)
+        x = self.conv(x)
+        x = self.bn(x)
+        x = torch.relu(x).flatten()
+        x = self.fc1(x)
+        return self.fc2(x)
 
     # save the model to a file
     def save(self, filename):
@@ -114,7 +117,7 @@ class Connect4Model(nn.Module):
         mask = torch.tensor([0.0 if board[0, i] == 0 else math.inf for i in range(COLS)])
         if player == 2:
             invert_board(board)
-        board_tensor = torch.tensor(board, dtype=torch.float32).flatten()
+        board_tensor = torch.tensor(board, dtype=torch.float32).reshape(1, 1, ROWS, COLS)
         with torch.no_grad():
             outputs = self.forward(board_tensor)
             if player == 2:
