@@ -7,7 +7,7 @@ import numpy as np
 import math
 import copy
 import pickle
-from multiprocessing import Pool
+from torch.multiprocessing import Pool, set_sharing_strategy, set_start_method
 
 ROWS, COLS = 6, 7
 player = 1
@@ -114,10 +114,10 @@ class Connect4Model(nn.Module):
     def play_move(self, board, player):
         # construct a mask of valid values - an entry in the list is
         # True if it's legal to move there
-        mask = torch.tensor([0.0 if board[0, i] == 0 else math.inf for i in range(COLS)])
+        mask = torch.tensor([0.0 if board[0, i] == 0 else math.inf for i in range(COLS)]).cuda()
         if player == 2:
             invert_board(board)
-        board_tensor = torch.tensor(board, dtype=torch.float32).reshape(1, 1, ROWS, COLS)
+        board_tensor = torch.tensor(board, dtype=torch.float32).reshape(1, 1, ROWS, COLS).cuda()
         with torch.no_grad():
             outputs = self.forward(board_tensor)
             if player == 2:
@@ -232,6 +232,7 @@ class GeneticAlgorithm:
             # apply the collected results to the actual win counts on the models
             for res in async_results:
                 store_result(res.get())
+#        store_result(play_i(i, self.models, 100))
 
     # mutate survivors until population is full
     def fill_population(self):
@@ -258,6 +259,8 @@ class GeneticAlgorithm:
 
 
 if __name__ == "__main__":
+    set_start_method('spawn')
+
 #    model = Connect4Model(ROWS * COLS, COLS)
 #    play_one_game(None, model)
 
@@ -268,7 +271,11 @@ if __name__ == "__main__":
     except:
         gen = GeneticAlgorithm(40)
 
+    for model in gen.models:
+        model.cuda()
+
     for i in range(10000):
         gen.generation_step(i)
         with open('genetic_data', 'wb') as f:
             pickle.dump(gen, f)
+#    play_one_game(None, gen.models[1])
