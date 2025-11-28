@@ -1,5 +1,4 @@
 import sys
-import random
 import torch
 import torch.nn as nn
 import random
@@ -143,16 +142,29 @@ class Connect4Model(nn.Module):
                         val *= random.uniform(-2.0, 2.0)
         return mutant
 
-def reward_model(model, reward):
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+
+def reward_move(model, board_tensor, move, reward, optimizer, criterion):
     optimizer.zero_grad()
-    outputs = model(model.moves[-1][0])
+    outputs = model(board_tensor)
     target = outputs.new_zeros(COLS)
-    target[model.moves[-1][1]] = reward
+    target[move] = reward
     loss = criterion(outputs, target)
     loss.backward()
     optimizer.step()
+
+def reward_model(model, reward):
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+
+    # reward the winning move
+    reward_move(model, model.moves[-1][0], model.moves[-1][1], reward, optimizer, criterion)
+
+    # remove the winning move and reward a random set of 5 of the
+    # remaining moves
+    model.moves.pop()
+    random.shuffle(model.moves)
+    for move in model.moves[:5]:
+        reward_move(model, move[0], move[1], reward, optimizer, criterion)
 
 # have two models play a game until one wins.
 # if a model is None then a human needs to play.
