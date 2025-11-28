@@ -88,7 +88,7 @@ class Connect4Model(nn.Module):
         self.fc1 = nn.Linear(4*5, 128)
         self.fc2 = nn.Linear(128, output_dim)
         self.win_count = 0
-        # list of (board_state, move) tuples
+        # list of (board_state tensor, move) tuples
         self.moves = []
 
     def __lt__(self, other):
@@ -125,7 +125,10 @@ class Connect4Model(nn.Module):
             if player == 2:
                 invert_board(board)
             # apply the mask to the outputs and return the highest-rated move
-            return torch.argmax(outputs - mask).item()
+            output_tensor = outputs - mask
+            move = torch.argmax(output_tensor).item()
+            self.moves.append((board_tensor.detach(), move))
+            return move
     
     # return a copy of this model, with some weights randomly mutated
     def get_mutant(self):
@@ -139,6 +142,17 @@ class Connect4Model(nn.Module):
                         # mutate the parameter by multiplying by the range -2.0 to 2.0
                         val *= random.uniform(-2.0, 2.0)
         return mutant
+
+def reward_model(model, reward):
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    optimizer.zero_grad()
+    outputs = model(model.moves[-1][0])
+    target = outputs.new_zeros(COLS)
+    target[model.moves[-1][1]] = reward
+    loss = criterion(outputs, target)
+    loss.backward()
+    optimizer.step()
 
 # have two models play a game until one wins.
 # if a model is None then a human needs to play.
@@ -169,12 +183,13 @@ def play_one_game(model1, model2):
         else:
             move = m.play_move(board, player_index + 1)
             #print(f'AI player {player} moved in column {move + 1}')
-            m.moves.append((board.copy(), move))
         result = drop_piece(move)
         if result == DRAW:
             return
             break
         elif result == WIN:
+            # reinforce winning move
+            reward_model(m, 1.0)
             return player_index
             break
         elif result == INVALID_MOVE:
@@ -232,12 +247,8 @@ class GeneticAlgorithm:
 #        # assume a 12-thread CPU for now
 #        with Pool(12) as p:
 #            # async play each model against the rest
-#            for i in range(self.num_models):
-#                async_results[i] = p.apply_async(play_i, (i, self.models, 100))
-#            # apply the collected results to the actual win counts on the models
-#            for res in async_results:
-#                store_result(res.get())
-        store_result(play_i(i, self.models, 100))
+        for i in range(self.num_models):
+            store_result(play_i(i, self.models, 100))
 
     # mutate survivors until population is full
     def fill_population(self):
