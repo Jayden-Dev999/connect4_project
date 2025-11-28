@@ -7,7 +7,7 @@ import numpy as np
 import math
 import copy
 import pickle
-from torch.multiprocessing import Pool, set_sharing_strategy, set_start_method
+#from torch.multiprocessing import Pool, set_sharing_strategy, set_start_method
 
 ROWS, COLS = 6, 7
 player = 1
@@ -221,18 +221,18 @@ class GeneticAlgorithm:
             for m, w in zip(self.models, all_wins):
                 m.win_count += w
 
-        # allocate a list to store async results from running models in parallel
-        async_results = [None] * self.num_models
-
-        # assume a 12-thread CPU for now
-        with Pool(12) as p:
-            # async play each model against the rest
-            for i in range(self.num_models):
-                async_results[i] = p.apply_async(play_i, (i, self.models, 100))
-            # apply the collected results to the actual win counts on the models
-            for res in async_results:
-                store_result(res.get())
-#        store_result(play_i(i, self.models, 100))
+#        # allocate a list to store async results from running models in parallel
+#        async_results = [None] * self.num_models
+#
+#        # assume a 12-thread CPU for now
+#        with Pool(12) as p:
+#            # async play each model against the rest
+#            for i in range(self.num_models):
+#                async_results[i] = p.apply_async(play_i, (i, self.models, 100))
+#            # apply the collected results to the actual win counts on the models
+#            for res in async_results:
+#                store_result(res.get())
+        store_result(play_i(i, self.models, 100))
 
     # mutate survivors until population is full
     def fill_population(self):
@@ -259,7 +259,7 @@ class GeneticAlgorithm:
 
 
 if __name__ == "__main__":
-    set_start_method('spawn')
+#    set_start_method('spawn')
 
 #    model = Connect4Model(ROWS * COLS, COLS)
 #    play_one_game(None, model)
