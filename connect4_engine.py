@@ -179,8 +179,10 @@ def reward_model(model, reward):
 def play_one_game(model1, model2):
     players = [model1, model2]
     reset_board()
-    model1.moves.clear()
-    model2.moves.clear()
+    if model1 is not None:
+        model1.moves.clear()
+    if model2 is not None:
+        model2.moves.clear()
     player_index = random.randint(0,1)
     while True:
         m = players[player_index]
