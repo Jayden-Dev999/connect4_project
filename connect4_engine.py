@@ -252,6 +252,7 @@ class GeneticAlgorithm:
     def __init__(self, num_models):
         self.num_models = num_models
         self.models = []
+        self.generation = 0
         for i in range(num_models):
             self.models.append(Connect4Model(ROWS * COLS, COLS))
 
@@ -280,15 +281,15 @@ class GeneticAlgorithm:
         while len(self.models) < self.num_models:
             to_mutate = self.models[random.randint(0, survivor_count - 1)]
             self.models.append(to_mutate.get_mutant())
-
-    def generation_step(self, step_number):
+ 
+    def generation_step(self):
         # have everyone play everyone else
         self.everyone_play_everyone()
 
         # rank the models by decreasing number of wins
         self.models.sort(reverse=True)
 
-        print(f"step {step_number} best model won {self.models[0].win_count} games, worst won {self.models[-1].win_count}")
+        print(f"generation {self.generation} best model won {self.models[0].win_count} games, worst won {self.models[-1].win_count}")
 
         # keep only the top N models
         num_keep = self.num_models // 10
@@ -296,6 +297,7 @@ class GeneticAlgorithm:
 
         # mutate the surviving models into a new population
         self.fill_population()
+        self.generation += 1
 
 
 if __name__ == "__main__":
