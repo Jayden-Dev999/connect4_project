@@ -291,8 +291,8 @@ class GeneticAlgorithm:
 
         print(f"generation {self.generation} best model won {self.models[0].win_count} games, worst won {self.models[-1].win_count}")
 
-        # keep only the top N models
-        num_keep = self.num_models // 10
+        # keep only the top half of the models
+        num_keep = self.num_models // 2
         self.models = self.models[:num_keep]
 
         # mutate the surviving models into a new population
