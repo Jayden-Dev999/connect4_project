@@ -314,6 +314,12 @@ if __name__ == "__main__":
             gen.num_models = 40
     except:
         gen = GeneticAlgorithm(40)
+        for model in gen.models:
+            torch.nn.init.uniform_(model.conv1.weight)
+            torch.nn.init.uniform_(model.conv2.weight)
+            torch.nn.init.uniform_(model.bn.weight)
+            torch.nn.init.uniform_(model.fc1.weight)
+            torch.nn.init.uniform_(model.fc2.weight)
 
     for model in gen.models:
         model.cuda()
