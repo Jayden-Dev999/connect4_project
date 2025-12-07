@@ -82,9 +82,10 @@ class Connect4Model(nn.Module):
   
     def __init__(self, input_dim, output_dim):
         super(Connect4Model, self).__init__()
-        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, padding="same")
+        self.conv2 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, padding="same")
         self.bn = nn.BatchNorm2d(1)
-        self.fc1 = nn.Linear(4*5, 128)
+        self.fc1 = nn.Linear(ROWS*COLS, 128)
         self.fc2 = nn.Linear(128, output_dim)
         self.win_count = 0
         # list of (board_state tensor, move) tuples
@@ -95,9 +96,9 @@ class Connect4Model(nn.Module):
 
     # this function tells pytorch how to apply the layers of the neural net
     def forward(self, x):
-        x = self.conv(x)
-        x = self.bn(x)
-        x = torch.relu(x).flatten()
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.bn(x).flatten()
         x = self.fc1(x)
         return self.fc2(x)
 
