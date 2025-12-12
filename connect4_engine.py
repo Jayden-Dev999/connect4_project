@@ -6,6 +6,7 @@ import numpy as np
 import math
 import copy
 import pickle
+import argparse
 #from torch.multiprocessing import Pool, set_sharing_strategy, set_start_method
 
 ROWS, COLS = 6, 7
@@ -247,7 +248,7 @@ def play_series(model1, model2, number_of_games):
 def play_i(i, models, number_of_games):
     all_wins = [0] * len(models)
     for j in range(i+1, len(models)):
-        wins = play_series(models[i], models[j], 100)
+        wins = play_series(models[i], models[j], number_of_games)
         print(f"model {i} won {wins[0]}, model {j} won {wins[1]}")
         all_wins[i] = wins[0]
         all_wins[j] = wins[1]
@@ -311,12 +312,24 @@ if __name__ == "__main__":
 #    model = Connect4Model(ROWS * COLS, COLS)
 #    play_one_game(None, model)
 
+    parser = argparse.ArgumentParser(prog='connect4_engine')
+    parser.add_argument('type', choices=['genetic', 'normal'])
+    parser.add_argument('action', choices=['play', 'train'])
+    args = parser.parse_args()
+
+    if args.type == 'genetic':
+        filename = 'genetic_data'
+        num_models = 40
+    elif args.type == 'normal':
+        filename = 'normal_data'
+        num_models = 1
+
     try:
-        with open('genetic_data', 'rb') as f:
+        with open(filename, 'rb') as f:
             gen = pickle.load(f)
-            gen.num_models = 40
+            gen.num_models = num_models
     except:
-        gen = GeneticAlgorithm(40)
+        gen = GeneticAlgorithm(num_models)
         for model in gen.models:
             torch.nn.init.uniform_(model.conv1.weight)
             torch.nn.init.uniform_(model.conv2.weight)
@@ -327,8 +340,17 @@ if __name__ == "__main__":
     for model in gen.models:
         model.cuda()
 
-    for _ in range(2):
-        gen.generation_step()
-        with open('genetic_data', 'wb') as f:
-            pickle.dump(gen, f)
-#    play_one_game(None, gen.models[1])
+    if args.action == 'train':
+        if args.type == 'genetic':
+            for _ in range(2):
+                gen.generation_step()
+                with open(filename, 'wb') as f:
+                    pickle.dump(gen, f)
+        elif args.type == 'normal':
+            # Just have the model play a lot of games with itself, since
+            # we reinforce winning/losing moves as we go
+            play_series(gen.models[0], gen.models[0], 2000)
+            with open(filename, 'wb') as f:
+                pickle.dump(gen, f)
+    elif args.action == 'play':
+        play_one_game(None, gen.models[0])
