@@ -121,14 +121,21 @@ class Connect4Model(nn.Module):
         if player == 2:
             invert_board(board)
         board_tensor = torch.tensor(board, dtype=torch.float32).reshape(1, 1, ROWS, COLS).cuda()
-        with torch.no_grad():
-            outputs = self.forward(board_tensor)
+        # with low probability, play a random legal move - this is
+        # how we explore new solutions and try to learn from them if
+        # they're good/bad
+        if random.random() < 0.01:
+            # get indexes of legal moves from the mask
+            legal = list([x[0] for x in enumerate(mask) if x[1] == 0.0])
+            move = random.choice(legal)
+        else:
+            with torch.no_grad():
+                outputs = self.forward(board_tensor)
+            # apply the mask to the outputs and return the highest-rated move
+            output_tensor = outputs - mask
+            move = torch.argmax(output_tensor).item()
         if player == 2:
             invert_board(board)
-        # apply the mask to the outputs and return the highest-rated move
-        output_tensor = outputs - mask
-#        print("move = " + str(outputs))
-        move = torch.argmax(output_tensor).item()
         self.moves.append((board_tensor.detach(), move))
         return move
     
