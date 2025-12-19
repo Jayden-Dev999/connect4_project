@@ -168,22 +168,19 @@ def reward_move(model, board_tensor, move, reward, optimizer, criterion):
     optimizer.step()
 
 def reward_model(model, reward):
-    if model == None:
-        print("You won!")
-    else:
-        criterion = nn.MSELoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     # reward the last move
-        reward_move(model, model.moves[-1][0], model.moves[-1][1], reward, optimizer, criterion)
+    reward_move(model, model.moves[-1][0], model.moves[-1][1], reward, optimizer, criterion)
 
     # remove the winning move and reward a random set of 5 of the
     # remaining moves
-        if reward == 1.0:
-            model.moves.pop()
-            random.shuffle(model.moves)
-            for move in model.moves[:5]:
-                reward_move(model, move[0], move[1], reward, optimizer, criterion)
+    if reward == 1.0:
+        model.moves.pop()
+        random.shuffle(model.moves)
+        for move in model.moves[:5]:
+            reward_move(model, move[0], move[1], reward, optimizer, criterion)
 
 # have two models play a game until one wins.
 # if a model is None then a human needs to play.
@@ -221,14 +218,17 @@ def play_one_game(model1, model2):
             return
             break
         elif result == WIN:
+            if m is None:
+                print("You won")
             # reinforce winning move
             if m is not None:
                 reward_model(m, 1.0)
             # punish losing move
             other_m = players[(player_index + 1) % 2]
-            reward_model(other_m, -1.0)
-            return player_index
-            break
+            if other_m is not None:
+                reward_model(other_m, -1.0)
+                return player_index
+                break
         elif result == INVALID_MOVE:
             if m is None:
                 # human made a mistake, let them try again
