@@ -320,9 +320,20 @@ if __name__ == "__main__":
 #    play_one_game(None, model)
 
     parser = argparse.ArgumentParser(prog='connect4_engine')
-    parser.add_argument('type', choices=['genetic', 'normal'])
+    parser.add_argument('type', choices=['genetic', 'normal', 'compete'])
     parser.add_argument('action', choices=['play', 'train'])
     args = parser.parse_args()
+
+    if args.type == 'compete':
+        if args.action != 'play':
+            raise RuntimeError('compete can only play')
+        with open('genetic_data', 'rb') as f:
+            genetic = pickle.load(f)
+        with open('normal_data', 'rb') as f:
+            normal = pickle.load(f)
+        wins = play_series(genetic.models[0], normal.models[0], 2000)
+        print(f'genetic won {wins[0]}, normal won {wins[1]}')
+        sys.exit(0)
 
     if args.type == 'genetic':
         filename = 'genetic_data'
