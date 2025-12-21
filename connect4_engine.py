@@ -326,7 +326,8 @@ if __name__ == "__main__":
 
     if args.type == 'compete':
         if args.action != 'play':
-            raise RuntimeError('compete can only play')
+            r-
+            aise RuntimeError('compete can only play')
         with open('genetic_data', 'rb') as f:
             genetic = pickle.load(f)
         with open('normal_data', 'rb') as f:
