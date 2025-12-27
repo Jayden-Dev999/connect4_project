@@ -1,6 +1,7 @@
 import sys
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import random
 import numpy as np
 import math
@@ -69,25 +70,18 @@ def reset_board():
     board = np.zeros((ROWS, COLS), dtype=int)
     player = 1
 
-# invert the board, so that 1's become 2's and vice-versa
-def invert_board(board):
-    for r in range(ROWS):
-        for c in range(COLS):
-            if board[r][c] == 1:
-                board[r][c] = 2
-            elif board[r][c] == 2:
-                board[r][c] = 1
-
 # represents the data of an AI model
 class Connect4Model(nn.Module):
   
     def __init__(self, input_dim, output_dim):
         super(Connect4Model, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, padding="same")
-        self.conv2 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, padding="same")
-        self.bn = nn.BatchNorm2d(1)
-        self.fc1 = nn.Linear(ROWS*COLS, 128)
-        self.fc2 = nn.Linear(128, output_dim)
+        self.conv1 = nn.Conv2d(2, 32, 3, padding=1)
+        self.conv2 = nn.Conv2d(32, 32, 3, padding=1)
+        self.conv3 = nn.Conv2d(32, 32, 3, padding=1)
+        self.conv4 = nn.Conv2d(32, 32, 3, padding=1)
+
+        self.policy_conv = nn.Conv2d(32, 2, 1)
+        self.policy_fc = nn.Linear(2 * ROWS * COLS, COLS)
         self.win_count = 0
         # list of (board_state tensor, move) tuples
         self.moves = []
@@ -97,11 +91,13 @@ class Connect4Model(nn.Module):
 
     # this function tells pytorch how to apply the layers of the neural net
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.bn(x).flatten()
-        x = self.fc1(x)
-        return self.fc2(x)
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = F.relu(self.conv4(x))
+
+        x = F.relu(self.policy_conv(x))
+        return self.policy_fc(x.flatten())
 
     # save the model to a file
     def save(self, filename):
@@ -112,15 +108,26 @@ class Connect4Model(nn.Module):
         self.load_state_dict(torch.load(filename, weights_only=True))
         self.eval()
 
+    def board_to_tensor(self, board, player):
+        # convert to (2, 6, 7) tensor.  first (6,7) array is current
+        # player's pieces, second (6,7) array is opponent's
+        tensor = torch.zeros((2,6,7), dtype=torch.float32)
+        for r in range(ROWS):
+            for c in range(COLS):
+                value = board[r][c]
+                if value == player:
+                    tensor[0,r,c] = 1.0
+                elif value != 0:
+                    tensor[1,r,c] = 1.0
+        return tensor.cuda()
+        
     # ask the model which move it should play, given the board
     # position and this model's player.  Returns a column to play in.
     def play_move(self, board, player):
         # construct a mask of valid values - an entry in the list is
         # True if it's legal to move there
         mask = torch.tensor([0.0 if board[0, i] == 0 else math.inf for i in range(COLS)]).cuda()
-        if player == 2:
-            invert_board(board)
-        board_tensor = torch.tensor(board, dtype=torch.float32).reshape(1, 1, ROWS, COLS).cuda()
+        board_tensor = self.board_to_tensor(board, player)
         # with low probability, play a random legal move - this is
         # how we explore new solutions and try to learn from them if
         # they're good/bad
@@ -134,8 +141,6 @@ class Connect4Model(nn.Module):
             # apply the mask to the outputs and return the highest-rated move
             output_tensor = outputs - mask
             move = torch.argmax(output_tensor).item()
-        if player == 2:
-            invert_board(board)
         self.moves.append((board_tensor.detach(), move))
         return move
     
@@ -351,9 +356,10 @@ if __name__ == "__main__":
         for model in gen.models:
             torch.nn.init.uniform_(model.conv1.weight)
             torch.nn.init.uniform_(model.conv2.weight)
-            torch.nn.init.uniform_(model.bn.weight)
-            torch.nn.init.uniform_(model.fc1.weight)
-            torch.nn.init.uniform_(model.fc2.weight)
+            torch.nn.init.uniform_(model.conv3.weight)
+            torch.nn.init.uniform_(model.conv4.weight)
+            torch.nn.init.uniform_(model.policy_conv.weight)
+            torch.nn.init.uniform_(model.policy_fc.weight)
 
     for model in gen.models:
         model.cuda()
