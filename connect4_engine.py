@@ -131,7 +131,7 @@ class Connect4Model(nn.Module):
         # with low probability, play a random legal move - this is
         # how we explore new solutions and try to learn from them if
         # they're good/bad
-        if random.random() < 0.01:
+        if random.random() < 0.25:
             # get indexes of legal moves from the mask
             legal = list([x[0] for x in enumerate(mask) if x[1] == 0.0])
             move = random.choice(legal)
