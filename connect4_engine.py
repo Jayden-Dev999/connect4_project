@@ -26,6 +26,8 @@ WIN = 1
 KEEP_PLAYING = 2
 INVALID_MOVE = 3
 
+random_move_threshold = 0.25
+
 def drop_piece(col):
     global player
     for row in reversed(range(ROWS)):
@@ -131,7 +133,7 @@ class Connect4Model(nn.Module):
         # with low probability, play a random legal move - this is
         # how we explore new solutions and try to learn from them if
         # they're good/bad
-        if random.random() < 0.25:
+        if random.random() < random_move_threshold:
             # get indexes of legal moves from the mask
             legal = list([x[0] for x in enumerate(mask) if x[1] == 0.0])
             move = random.choice(legal)
@@ -330,6 +332,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.type == 'compete':
+        # play at full strength, no random moves
+        random_move_threshold = 0.0
+
         if args.action != 'play':
             raise RuntimeError('compete can only play')
         with open('genetic_data', 'rb') as f:
@@ -377,4 +382,7 @@ if __name__ == "__main__":
             with open(filename, 'wb') as f:
                 pickle.dump(gen, f)
     elif args.action == 'play':
+        # play at full strength, no random moves
+        random_move_threshold = 0.0
+
         play_one_game(None, gen.models[0])
