@@ -122,14 +122,11 @@ class Connect4Model(nn.Module):
                 elif value != 0:
                     tensor[1,r,c] = 1.0
         return tensor.cuda()
-        
+
     # ask the model which move it should play, given the board
-    # position and this model's player.  Returns a column to play in.
-    def play_move(self, board, player):
-        # construct a mask of valid values - an entry in the list is
-        # True if it's legal to move there
-        mask = torch.tensor([0.0 if board[0, i] == 0 else math.inf for i in range(COLS)]).cuda()
-        board_tensor = self.board_to_tensor(board, player)
+    # position as a tensor from board_to_tensor.  Returns a column to
+    # play in.
+    def play_move_tensor(self, board_tensor, mask):
         # with low probability, play a random legal move - this is
         # how we explore new solutions and try to learn from them if
         # they're good/bad
@@ -146,6 +143,15 @@ class Connect4Model(nn.Module):
         self.moves.append((board_tensor.detach(), move))
         return move
     
+    # ask the model which move it should play, given the board
+    # position and this model's player.  Returns a column to play in.
+    def play_move(self, board, player):
+        # construct a mask of valid values - an entry in the list is
+        # True if it's legal to move there
+        mask = torch.tensor([0.0 if board[0, i] == 0 else math.inf for i in range(COLS)]).cuda()
+        board_tensor = self.board_to_tensor(board, player)
+        return self.play_move_tensor(board_tensor, mask)
+    
     # return a copy of this model, with some weights randomly mutated
     def get_mutant(self):
         mutant = copy.deepcopy(self)
@@ -161,7 +167,6 @@ class Connect4Model(nn.Module):
 
 
 def reward_move(model, board_tensor, move, reward, optimizer, criterion):
-    optimizer.zero_grad()
     outputs = model(board_tensor)
     # we can make the target have the same outputs, but with a
     # slightly larger value for this move
@@ -173,6 +178,7 @@ def reward_move(model, board_tensor, move, reward, optimizer, criterion):
     loss = criterion(outputs, target)
     loss.backward()
     optimizer.step()
+    optimizer.zero_grad()
 
 def reward_model(model, reward):
     criterion = nn.MSELoss()
